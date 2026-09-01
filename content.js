@@ -945,7 +945,51 @@
   // ATALHO DE TECLADO
   // ==========================================================
 
-  document.addEventListener(
+  function showShortcutNotice(message) {
+    const existing =
+      document.getElementById(
+        "coerente-ptpt-shortcut-notice"
+      );
+
+    existing?.remove();
+
+    const notice =
+      document.createElement("div");
+
+    notice.id =
+      "coerente-ptpt-shortcut-notice";
+
+    notice.textContent =
+      message;
+
+    Object.assign(
+      notice.style,
+      {
+        position: "fixed",
+        right: "20px",
+        bottom: "20px",
+        zIndex: "2147483647",
+        padding: "10px 14px",
+        borderRadius: "8px",
+        background: "#111827",
+        color: "#ffffff",
+        font: "13px/1.4 system-ui, sans-serif",
+        boxShadow:
+          "0 6px 18px rgba(0, 0, 0, 0.25)"
+      }
+    );
+
+    document.documentElement.appendChild(
+      notice
+    );
+
+    setTimeout(
+      () => notice.remove(),
+      2500
+    );
+  }
+
+  window.addEventListener(
     "keydown",
     event => {
       const isShortcut =
@@ -958,8 +1002,31 @@
         return;
       }
 
+      if (event.repeat) {
+        return;
+      }
+
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      // Guardar de forma síncrona antes de contactar o
+      // background. O keyup acontece demasiado tarde quando a
+      // seleção acabou de ser feita através do teclado.
+      const hasSelection =
+        saveSelection();
+
+      if (!hasSelection) {
+        log(
+          "Atalho ignorado: não existe uma seleção válida."
+        );
+
+        showShortcutNotice(
+          "Selecione o texto que pretende melhorar."
+        );
+
+        return;
+      }
 
       log(
         "Atalho de teclado detetado."
