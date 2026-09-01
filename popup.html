@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coerente PT-PT</title>
+<style>
+body{font-family:system-ui,sans-serif;width:340px;margin:0;padding:18px;color:#202124}
+h1{font-size:18px;margin:0 0 14px}
+label{display:block;font-size:12px;font-weight:600;margin:12px 0 5px}
+input,textarea{box-sizing:border-box;width:100%;padding:9px;border:1px solid #c7c7c7;border-radius:7px;font:inherit}
+textarea{min-height:120px;resize:vertical}
+button{margin-top:14px;width:100%;padding:10px;border:0;border-radius:7px;cursor:pointer;font-weight:700;background:#111827;color:white}
+.status{margin-top:10px;font-size:12px;min-height:16px}
+.note{font-size:11px;color:#666;line-height:1.4;margin-top:12px}
+</style>
+</head>
+<body>
+<h1>Coerente PT-PT</h1>
+<label for="apiKey">OpenAI API key</label>
+<input id="apiKey" type="password" placeholder="sk-...">
+<label for="model">Modelo</label>
+<input id="model" type="text" value="gpt-5.4-mini">
+<label for="systemPrompt">Instrução</label>
+<textarea id="systemPrompt"></textarea>
+<button id="save">Guardar</button>
+<div class="status" id="status"></div>
+<div class="note">A chave fica guardada localmente na extensão. O texto selecionado é enviado à API da OpenAI para ser reescrito.</div>
+<script src="popup.js"></script>
+</body>
+</html>
