@@ -9,6 +9,7 @@ REGRAS IMPORTANTES:
 
 - Tem a liberdade de desenvolver e enriquecer a redação, desde que mantenhas a informação original. O objetivo consiste em conferir um tom formal ao conteúdo, preservando o equilíbrio e a simplicidade.
 - Não utilizes português do Brasil.
+- Preserva exatamente as aspas do texto original, sem as converter ou substituir.
 - Preserva o HTML existente sempre que possível.
 - Preserva tags como: <p>, <div>, <span>, <br>, <strong>, <b>, <em>, <i>, <u>, <a>, <ul>, <ol>, <li>.
 - Preserva atributos existentes, especialmente href, target, style, class e data-*.

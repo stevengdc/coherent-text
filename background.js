@@ -2,29 +2,23 @@ const MENU_ID = "coerente-ptpt";
 
 const DEFAULT_MODEL = "gpt-5.6-luna";
 
-const DEFAULT_PROMPT = `
-És um assistente de escrita especializado em português europeu.
+let defaultPromptPromise;
 
-Receberás um fragmento HTML proveniente de um editor de email.
+function loadDefaultPrompt() {
+  if (!defaultPromptPromise) {
+    defaultPromptPromise = fetch(
+      chrome.runtime.getURL("prompt.txt")
+    ).then(response => {
+      if (!response.ok) {
+        throw new Error("Não foi possível carregar prompt.txt.");
+      }
 
-OBJETIVO:
-Melhorar apenas o texto visível, tornando-o mais coerente, claro, natural e moderadamente formal em português europeu (PT-PT).
+      return response.text();
+    }).then(text => text.trim());
+  }
 
-REGRAS IMPORTANTES:
-
-- Tem a liberdade de desenvolver e enriquecer a redação, desde que mantenhas a informação original. O objetivo consiste em conferir um tom formal ao conteúdo, preservando o equilíbrio e a simplicidade.
-- Não utilizes português do Brasil.
-- Preserva o HTML existente sempre que possível.
-- Preserva tags como: <p>, <div>, <span>, <br>, <strong>, <b>, <em>, <i>, <u>, <a>, <ul>, <ol>, <li>.
-- Preserva atributos existentes, especialmente href, target, style, class e data-*.
-- Não cries scripts.
-- Não cries CSS adicional.
-- Não alteres URLs.
-- Não alteres endereços de email.
-- Não alteres nomes próprios, números ou referências.
-- Não envolvas a resposta em \`\`\`html.
-- Devolve APENAS o fragmento HTML final.
-`;
+  return defaultPromptPromise;
+}
 
 
 // ============================================================
@@ -91,6 +85,9 @@ chrome.runtime.onInstalled.addListener(
     );
 
     try {
+      const defaultPrompt =
+        await loadDefaultPrompt();
+
       await chrome.contextMenus.removeAll();
 
       chrome.contextMenus.create({
@@ -112,7 +109,7 @@ chrome.runtime.onInstalled.addListener(
 
         systemPrompt:
           current.systemPrompt ||
-          DEFAULT_PROMPT
+          defaultPrompt
       });
 
       log(
@@ -440,7 +437,7 @@ async function handleImproveRequest(
 
       const prompt =
         settings.systemPrompt ||
-        DEFAULT_PROMPT;
+        await loadDefaultPrompt();
 
       log(
         "Configuração carregada.",

@@ -66,7 +66,7 @@ Estrutura principal:
 - `background.js` — menu, configuração e comunicação com a API;
 - `content.js` — leitura e substituição da seleção;
 - `popup.html` e `popup.js` — interface de configuração;
-- `prompt.txt` — instrução de referência;
+- `prompt.txt` — instrução inicial usada pela extensão;
 - `icons/` — ícones usados pelo navegador.
 
 ## Contribuir
