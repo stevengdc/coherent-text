@@ -9,7 +9,9 @@ Extensão para Chrome que melhora texto selecionado, tornando-o mais claro, coer
 - Mantém a estrutura e os atributos de fragmentos HTML sempre que possível.
 - Funciona em `input`, `textarea`, elementos `contenteditable` e editores como o CKEditor.
 - Pode ser acionada pelo menu de contexto ou pelo atalho `Ctrl/Cmd + Shift + Y`.
-- Permite configurar o modelo e as instruções usadas na reescrita.
+- Permite escolher entre OpenAI, Anthropic, Gemini, Grok (xAI) e DeepSeek.
+- Permite configurar separadamente a chave e o modelo de cada fornecedor.
+- Abre todas as opções num separador próprio ao clicar no ícone da extensão.
 
 ## Requisitos
 
@@ -28,13 +30,14 @@ Extensão para Chrome que melhora texto selecionado, tornando-o mais claro, coer
 
 ## Configuração
 
-1. Clique no ícone da extensão.
-2. Introduza a sua chave da API da OpenAI.
-3. Confirme ou altere o modelo.
-4. Personalize as instruções, se necessário.
-5. Clique em **Guardar**.
+1. Clique no ícone da extensão para abrir a página de configuração.
+2. Escolha o fornecedor de IA.
+3. Introduza a chave da API desse fornecedor.
+4. Confirme ou altere o modelo.
+5. Personalize as instruções, se necessário.
+6. Clique em **Guardar configuração**.
 
-A chave é guardada localmente pelo Chrome através de `chrome.storage.local`. Não é incluída no código nem enviada para este repositório. O texto selecionado e a chave são enviados diretamente para a API da OpenAI quando é pedida uma reescrita.
+As chaves são guardadas localmente pelo Chrome através de `chrome.storage.local`. Não são incluídas no código nem enviadas para este repositório. O texto selecionado e a chave correspondente são enviados diretamente para a API do fornecedor ativo quando é pedida uma reescrita.
 
 ## Utilização
 
@@ -65,8 +68,9 @@ Estrutura principal:
 - `manifest.json` — configuração da extensão;
 - `background.js` — menu, configuração e comunicação com a API;
 - `content.js` — leitura e substituição da seleção;
-- `popup.html` e `popup.js` — interface de configuração;
+- `options.html` e `options.js` — página de configuração dos fornecedores;
 - `prompt.txt` — instrução inicial usada pela extensão;
+- `CONTEXT.md` — contexto técnico para continuidade do desenvolvimento;
 - `icons/` — ícones usados pelo navegador.
 
 ## Contribuir

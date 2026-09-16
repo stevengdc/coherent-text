@@ -2,6 +2,14 @@ const MENU_ID = "coerente-ptpt";
 
 const DEFAULT_MODEL = "gpt-5.6-luna";
 
+const DEFAULT_MODELS = {
+  openai: DEFAULT_MODEL,
+  anthropic: "claude-sonnet-5",
+  gemini: "gemini-3.5-flash",
+  xai: "grok-4.6",
+  deepseek: "deepseek-flash"
+};
+
 let defaultPromptPromise;
 
 function loadDefaultPrompt() {
@@ -134,6 +142,10 @@ chrome.runtime.onInstalled.addListener(
 log(
   "Service Worker iniciado."
 );
+
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage();
+});
 
 
 // ============================================================
@@ -420,20 +432,27 @@ async function handleImproveRequest(
         await chrome.storage.local.get([
           "apiKey",
           "model",
+          "provider",
+          "apiKeys",
+          "models",
           "systemPrompt"
         ]);
 
-      if (
-        !settings.apiKey
-      ) {
+      const provider = settings.provider || "openai";
+      const apiKeys = { ...(settings.apiKeys || {}) };
+      const models = { ...DEFAULT_MODELS, ...(settings.models || {}) };
+
+      if (!apiKeys.openai && settings.apiKey) apiKeys.openai = settings.apiKey;
+      if (!settings.models?.openai && settings.model) models.openai = settings.model;
+
+      const apiKey = apiKeys[provider];
+      const model = models[provider] || DEFAULT_MODELS[provider];
+
+      if (!apiKey) {
         throw new Error(
-          "Não existe uma API key configurada."
+          "Não existe uma chave de API configurada para o fornecedor ativo."
         );
       }
-
-      const model =
-        settings.model ||
-        DEFAULT_MODEL;
 
       const prompt =
         settings.systemPrompt ||
@@ -443,6 +462,7 @@ async function handleImproveRequest(
         "Configuração carregada.",
         {
           model,
+          provider,
           hasKey:
             true
         }
@@ -462,17 +482,19 @@ async function handleImproveRequest(
         result =
           await improveHtml(
             selection.html,
-            settings.apiKey,
+            apiKey,
             model,
-            prompt
+            prompt,
+            provider
           );
 
       } else {
         result =
           await improvePlainText(
             selection.text,
-            settings.apiKey,
-            model
+            apiKey,
+            model,
+            provider
           );
       }
 
@@ -591,7 +613,8 @@ async function improveHtml(
   html,
   apiKey,
   model,
-  systemPrompt
+  systemPrompt,
+  provider
 ) {
   log(
     "A enviar HTML para a OpenAI.",
@@ -602,41 +625,13 @@ async function improveHtml(
     }
   );
 
-  const response =
-    await fetch(
-      "https://api.openai.com/v1/responses",
-      {
-        method:
-          "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          "Authorization":
-            `Bearer ${apiKey}`
-        },
-
-        body:
-          JSON.stringify({
-            model,
-
-            instructions:
-              systemPrompt,
-
-            input:
-              "Fragmento HTML a melhorar:\n\n" +
-              html,
-
-            max_output_tokens:
-              4000
-          })
-      }
-    );
-
-  return await parseResponse(
-    response
-  );
+  return await requestProvider({
+    provider,
+    apiKey,
+    model,
+    instructions: systemPrompt,
+    input: "Fragmento HTML a melhorar:\n\n" + html
+  });
 }
 
 
@@ -647,7 +642,8 @@ async function improveHtml(
 async function improvePlainText(
   text,
   apiKey,
-  model
+  model,
+  provider
 ) {
   const plainPrompt = `
 Reescreve o texto em português europeu (PT-PT).
@@ -670,50 +666,70 @@ Devolve apenas o texto final.
     }
   );
 
-  const response =
-    await fetch(
-      "https://api.openai.com/v1/responses",
-      {
-        method:
-          "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          "Authorization":
-            `Bearer ${apiKey}`
-        },
-
-        body:
-          JSON.stringify({
-            model,
-
-            instructions:
-              plainPrompt,
-
-            input:
-              text,
-
-            max_output_tokens:
-              4000
-          })
-      }
-    );
-
-  return await parseResponse(
-    response
-  );
+  return await requestProvider({
+    provider,
+    apiKey,
+    model,
+    instructions: plainPrompt.trim(),
+    input: text
+  });
 }
 
 
 // ============================================================
-// PARSE RESPOSTA
+// FORNECEDORES DE IA
 // ============================================================
 
-async function parseResponse(
-  response
-) {
+async function requestProvider({ provider, apiKey, model, instructions, input }) {
+  let url;
+  let headers = { "Content-Type": "application/json" };
+  let body;
+
+  if (provider === "openai") {
+    url = "https://api.openai.com/v1/responses";
+    headers.Authorization = `Bearer ${apiKey}`;
+    body = { model, instructions, input, max_output_tokens: 4000 };
+  } else if (provider === "anthropic") {
+    url = "https://api.anthropic.com/v1/messages";
+    headers["x-api-key"] = apiKey;
+    headers["anthropic-version"] = "2023-06-01";
+    body = {
+      model,
+      max_tokens: 4000,
+      system: instructions,
+      messages: [{ role: "user", content: input }]
+    };
+  } else if (provider === "gemini") {
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+    headers["x-goog-api-key"] = apiKey;
+    body = {
+      systemInstruction: { parts: [{ text: instructions }] },
+      contents: [{ role: "user", parts: [{ text: input }] }],
+      generationConfig: { maxOutputTokens: 4000 }
+    };
+  } else {
+    const baseUrl = provider === "xai"
+      ? "https://api.x.ai/v1/chat/completions"
+      : "https://api.deepseek.com/chat/completions";
+    url = baseUrl;
+    headers.Authorization = `Bearer ${apiKey}`;
+    body = {
+      model,
+      messages: [
+        { role: "system", content: instructions },
+        { role: "user", content: input }
+      ],
+      stream: false,
+      max_tokens: 4000
+    };
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body)
+  });
+
   const raw =
     await response.text();
 
@@ -758,35 +774,20 @@ async function parseResponse(
 
   let output = "";
 
-  if (
-    typeof data.output_text ===
-    "string"
-  ) {
-    output =
-      data.output_text;
-
-  } else if (
-    Array.isArray(
-      data.output
-    )
-  ) {
-    output =
-      data.output
-        .flatMap(
-          item =>
-            item.content ||
-            []
-        )
-        .filter(
-          item =>
-            typeof item.text ===
-            "string"
-        )
-        .map(
-          item =>
-            item.text
-        )
-        .join("");
+  if (provider === "openai") {
+    output = typeof data.output_text === "string"
+      ? data.output_text
+      : (data.output || []).flatMap(item => item.content || [])
+          .filter(item => typeof item.text === "string")
+          .map(item => item.text).join("");
+  } else if (provider === "anthropic") {
+    output = (data.content || []).filter(item => item.type === "text")
+      .map(item => item.text || "").join("");
+  } else if (provider === "gemini") {
+    output = (data.candidates?.[0]?.content?.parts || [])
+      .map(part => part.text || "").join("");
+  } else {
+    output = data.choices?.[0]?.message?.content || "";
   }
 
   if (
