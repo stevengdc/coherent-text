@@ -153,7 +153,8 @@ Todas as respostas são convertidas num único texto final antes de serem devolv
 
 ## Estado conhecido
 
-- A versão do manifesto após posicionar o assistente na posição atual do rato é `2.4.4`.
+- A versão do manifesto após tratar contextos invalidados durante o reload é `2.4.5`.
 - A sintaxe dos ficheiros JavaScript e o manifesto foram validados localmente.
 - Os pedidos reais a cada fornecedor dependem de chaves válidas e devem ser testados pelo utilizador ou num ambiente seguro.
 - Se um modelo deixar de existir, alterar primeiro o modelo na página de opções; atualizar o valor predefinido no código apenas quando necessário.
+- Se a extensão for recarregada com páginas já abertas, o content script antigo deixa de usar `chrome.runtime`; o utilizador deve atualizar esses separadores para carregar o novo contexto.

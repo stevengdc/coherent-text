@@ -56,6 +56,22 @@
   // ASSISTENTE FLUTUANTE
   // ==========================================================
 
+  function getActiveRuntime() {
+    try {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.runtime?.id
+      ) {
+        return chrome.runtime;
+      }
+    } catch {
+      // O contexto desaparece quando a extensão é recarregada
+      // enquanto este separador permanece aberto.
+    }
+
+    return null;
+  }
+
   function createMenuItems(items, documentRoot) {
     const fragment = documentRoot.createDocumentFragment();
 
@@ -106,6 +122,17 @@
       return floatingHost;
     }
 
+    const runtime = getActiveRuntime();
+    if (!runtime) return null;
+
+    let iconUrl;
+
+    try {
+      iconUrl = runtime.getURL("icons/icon-32.png");
+    } catch {
+      return null;
+    }
+
     floatingHost = document.createElement("div");
     floatingHost.id = "coerente-ptpt-floating-host";
     Object.assign(floatingHost.style, {
@@ -147,7 +174,7 @@
     primary.setAttribute("aria-label", "Tornar mais coerente (PT-PT)");
 
     const icon = document.createElement("img");
-    icon.src = chrome.runtime.getURL("icons/icon-32.png");
+    icon.src = iconUrl;
     icon.alt = "";
     primary.appendChild(icon);
 
@@ -240,6 +267,7 @@
     if (!rect) return;
 
     const host = ensureFloatingAssistant();
+    if (!host) return;
     const point = pointer === undefined
       ? lastPointerPosition
       : pointer;
@@ -261,13 +289,25 @@
     }
 
     hideFloatingAssistant();
-    chrome.runtime.sendMessage({
-      type: "COERENTE_INLINE_COMMAND",
-      command
-    }).catch(error => {
+    const runtime = getActiveRuntime();
+
+    if (!runtime) {
+      showShortcutNotice("Atualize esta página depois de recarregar a extensão.");
+      return;
+    }
+
+    try {
+      Promise.resolve(runtime.sendMessage({
+        type: "COERENTE_INLINE_COMMAND",
+        command
+      })).catch(error => {
+        log("Não foi possível executar o comando.", error);
+        showShortcutNotice("Não foi possível executar o comando.");
+      });
+    } catch (error) {
       log("Não foi possível executar o comando.", error);
-      showShortcutNotice("Não foi possível executar o comando.");
-    });
+      showShortcutNotice("Atualize esta página depois de recarregar a extensão.");
+    }
   }
 
 
@@ -1370,10 +1410,25 @@
         "Atalho de teclado detetado."
       );
 
-      chrome.runtime.sendMessage({
-        type:
-          "COERENTE_KEYBOARD_SHORTCUT"
-      });
+      const runtime = getActiveRuntime();
+
+      if (!runtime) {
+        showShortcutNotice(
+          "Atualize esta página depois de recarregar a extensão."
+        );
+        return;
+      }
+
+      try {
+        runtime.sendMessage({
+          type:
+            "COERENTE_KEYBOARD_SHORTCUT"
+        });
+      } catch {
+        showShortcutNotice(
+          "Atualize esta página depois de recarregar a extensão."
+        );
+      }
     },
     true
   );
