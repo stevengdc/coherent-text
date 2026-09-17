@@ -153,7 +153,7 @@ Todas as respostas são convertidas num único texto final antes de serem devolv
 
 ## Estado conhecido
 
-- A versão do manifesto após introduzir a pressão prolongada de `Ctrl` é `2.4.2`.
+- A versão do manifesto após corrigir a repetição automática da tecla `Ctrl` é `2.4.3`.
 - A sintaxe dos ficheiros JavaScript e o manifesto foram validados localmente.
 - Os pedidos reais a cada fornecedor dependem de chaves válidas e devem ser testados pelo utilizador ou num ambiente seguro.
 - Se um modelo deixar de existir, alterar primeiro o modelo na página de opções; atualizar o valor predefinido no código apenas quando necessário.

@@ -612,7 +612,7 @@
       return;
     }
 
-    const isModifier = ["Shift", "Alt", "Meta"].includes(event.key);
+    const isModifier = ["Control", "Shift", "Alt", "Meta"].includes(event.key);
 
     if (ctrlIsDown && !isModifier) {
       cancelCtrlHold();
