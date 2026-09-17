@@ -507,6 +507,10 @@
   document.addEventListener(
     "mouseup",
     event => {
+      if (floatingHost?.contains(event.target)) {
+        return;
+      }
+
       lastPointerPosition = {
         x: event.clientX,
         y: event.clientY
@@ -514,9 +518,9 @@
 
       setTimeout(
         () => {
-          if (saveSelection()) {
+          if (saveSelection() && event.ctrlKey) {
             showFloatingAssistant(lastPointerPosition);
-          } else if (!floatingHost?.contains(event.target)) {
+          } else if (!event.ctrlKey || !floatingHost?.contains(event.target)) {
             hideFloatingAssistant();
           }
         },
@@ -532,7 +536,12 @@
     event => {
       setTimeout(
         () => {
-          if (saveSelection()) {
+          if (event.key === "Control" || !event.ctrlKey) {
+            hideFloatingAssistant();
+            return;
+          }
+
+          if (saveSelection() && event.ctrlKey) {
             showFloatingAssistant(
               event.shiftKey
                 ? null
@@ -549,7 +558,14 @@
   window.addEventListener("scroll", hideFloatingAssistant, true);
   window.addEventListener("resize", hideFloatingAssistant);
   window.addEventListener("keydown", event => {
-    if (event.key === "Escape") hideFloatingAssistant();
+    if (event.key === "Escape") {
+      hideFloatingAssistant();
+      return;
+    }
+
+    if (event.key === "Control" && !event.repeat && saveSelection()) {
+      showFloatingAssistant(null);
+    }
   }, true);
 
 
