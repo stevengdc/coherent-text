@@ -51,7 +51,7 @@ Selecione texto num campo ou editor compatível e use uma destas opções:
 
 Após a resposta da API, a extensão substitui apenas a seleção pelo texto melhorado.
 
-Com texto selecionado, mantenha `Ctrl` premido durante 500 ms para apresentar um pequeno botão junto ao cursor. O botão permanece visível depois de libertar a tecla; pressione novamente `Ctrl` ou `Esc` para o fechar. Atalhos como `Ctrl+C`, `Ctrl+V` e `Ctrl+Z` cancelam automaticamente a abertura:
+Com texto selecionado, mantenha `Ctrl` premido durante 500 ms para apresentar um pequeno botão junto à posição atual do rato. O botão permanece visível depois de libertar a tecla; pressione novamente `Ctrl` ou `Esc` para o fechar. Atalhos como `Ctrl+C`, `Ctrl+V` e `Ctrl+Z` cancelam automaticamente a abertura:
 
 - clique no ícone para executar **Tornar mais coerente (PT-PT)**;
 - clique na seta para abrir os comandos adicionais e respetivos submenus.

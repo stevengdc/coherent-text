@@ -217,7 +217,7 @@
       ctrlHoldElapsed = true;
 
       if (ctrlIsDown && saveSelection()) {
-        showFloatingAssistant(null);
+        showFloatingAssistant(lastPointerPosition);
       }
     }, CTRL_HOLD_DELAY);
   }
@@ -533,6 +533,20 @@
     true
   );
 
+  document.addEventListener(
+    "pointermove",
+    event => {
+      lastPointerPosition = {
+        x: event.clientX,
+        y: event.clientY
+      };
+    },
+    {
+      capture: true,
+      passive: true
+    }
+  );
+
 
   document.addEventListener(
     "mouseup",
@@ -587,10 +601,10 @@
   );
 
   window.addEventListener("scroll", () => {
-    if (isFloatingAssistantVisible()) showFloatingAssistant(null);
+    if (isFloatingAssistantVisible()) showFloatingAssistant(lastPointerPosition);
   }, true);
   window.addEventListener("resize", () => {
-    if (isFloatingAssistantVisible()) showFloatingAssistant(null);
+    if (isFloatingAssistantVisible()) showFloatingAssistant(lastPointerPosition);
   });
   window.addEventListener("keydown", event => {
     if (event.key === "Escape") {
