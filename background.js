@@ -1,4 +1,28 @@
 const MENU_ID = "coerente-ptpt";
+const ROOT_MENU_ID = "coerente-ptpt-root";
+const SIZE_MENU_ID = "coerente-ptpt-size";
+const TONE_MENU_ID = "coerente-ptpt-tone";
+
+const CONTEXT_MENU_COMMANDS = {
+  "coerente-ptpt-explain": "explain",
+  "coerente-ptpt-summarize": "summarize",
+  "coerente-ptpt-key-points": "key_points",
+  "coerente-ptpt-improve": "improve_writing",
+  "coerente-ptpt-continue": "continue_writing",
+  "coerente-ptpt-shorten": "shorten",
+  "coerente-ptpt-lengthen": "lengthen",
+  "coerente-ptpt-tone-informal": "tone_informal",
+  "coerente-ptpt-tone-direct": "tone_direct",
+  "coerente-ptpt-tone-friendly": "tone_friendly",
+  "coerente-ptpt-tone-confident": "tone_confident",
+  "coerente-ptpt-tone-professional": "tone_professional"
+};
+
+const READ_ONLY_COMMANDS = new Set([
+  "explain",
+  "summarize",
+  "key_points"
+]);
 
 const DEFAULT_MODEL = "gpt-5.6-luna";
 
@@ -97,6 +121,63 @@ function isSupportedPageUrl(url) {
   );
 }
 
+function createContextMenus() {
+  chrome.contextMenus.create({
+    id: ROOT_MENU_ID,
+    title: "Coerente PT-PT",
+    contexts: ["selection"]
+  });
+
+  const createItem = (id, title, parentId = ROOT_MENU_ID) => {
+    chrome.contextMenus.create({
+      id,
+      parentId,
+      title,
+      contexts: ["selection"]
+    });
+  };
+
+  createItem(MENU_ID, "Tornar mais coerente (PT-PT)");
+  chrome.contextMenus.create({
+    id: "coerente-ptpt-separator-1",
+    parentId: ROOT_MENU_ID,
+    type: "separator",
+    contexts: ["selection"]
+  });
+  createItem("coerente-ptpt-explain", "Explicar");
+  createItem("coerente-ptpt-summarize", "Resumir");
+  createItem("coerente-ptpt-key-points", "Destacar pontos principais");
+  chrome.contextMenus.create({
+    id: "coerente-ptpt-separator-2",
+    parentId: ROOT_MENU_ID,
+    type: "separator",
+    contexts: ["selection"]
+  });
+  createItem("coerente-ptpt-improve", "Aprimorar a escrita");
+  createItem("coerente-ptpt-continue", "Continuar a escrever");
+
+  chrome.contextMenus.create({
+    id: SIZE_MENU_ID,
+    parentId: ROOT_MENU_ID,
+    title: "Alterar o tamanho",
+    contexts: ["selection"]
+  });
+  createItem("coerente-ptpt-shorten", "Encurtar", SIZE_MENU_ID);
+  createItem("coerente-ptpt-lengthen", "Alongar", SIZE_MENU_ID);
+
+  chrome.contextMenus.create({
+    id: TONE_MENU_ID,
+    parentId: ROOT_MENU_ID,
+    title: "Alterar o tom",
+    contexts: ["selection"]
+  });
+  createItem("coerente-ptpt-tone-informal", "Informal", TONE_MENU_ID);
+  createItem("coerente-ptpt-tone-direct", "Direto", TONE_MENU_ID);
+  createItem("coerente-ptpt-tone-friendly", "Amigável", TONE_MENU_ID);
+  createItem("coerente-ptpt-tone-confident", "Confiante", TONE_MENU_ID);
+  createItem("coerente-ptpt-tone-professional", "Profissional", TONE_MENU_ID);
+}
+
 
 // ============================================================
 // INSTALAÇÃO
@@ -115,11 +196,7 @@ chrome.runtime.onInstalled.addListener(
 
       await chrome.contextMenus.removeAll();
 
-      chrome.contextMenus.create({
-        id: MENU_ID,
-        title: "Tornar mais coerente (PT-PT)",
-        contexts: ["selection"]
-      });
+      createContextMenus();
 
       const current =
         await chrome.storage.local.get([
@@ -293,7 +370,15 @@ async function handleImproveRequest(
   tab
 ) {
 
-    const commandId = info.command || null;
+    const commandId =
+      info.command ??
+      CONTEXT_MENU_COMMANDS[info.menuItemId] ??
+      null;
+
+    const isHandledMenuItem =
+      info.menuItemId === MENU_ID ||
+      Object.hasOwn(CONTEXT_MENU_COMMANDS, info.menuItemId) ||
+      Object.hasOwn(info, "command");
 
     log(
       "Menu clicado.",
@@ -316,10 +401,7 @@ async function handleImproveRequest(
       }
     );
 
-    if (
-      info.menuItemId !==
-      MENU_ID
-    ) {
+    if (!isHandledMenuItem) {
       return;
     }
 
@@ -438,7 +520,19 @@ async function handleImproveRequest(
         !selection.hasSelection
       ) {
         throw new Error(
-          "Não encontrei uma seleção válida no editor."
+          "Não encontrei uma seleção válida."
+        );
+      }
+
+      const isReadOnlyCommand =
+        READ_ONLY_COMMANDS.has(commandId);
+
+      if (
+        selection.readOnly &&
+        !isReadOnlyCommand
+      ) {
+        throw new Error(
+          "Este comando só pode alterar texto dentro de uma caixa ou editor."
         );
       }
 
@@ -479,6 +573,7 @@ async function handleImproveRequest(
         await loadDefaultPrompt();
 
       let commandInstruction = null;
+      let commandDefinition = null;
 
       if (commandId) {
         const defaultCommands = await loadDefaultCommands();
@@ -491,6 +586,8 @@ async function handleImproveRequest(
         commandInstruction =
           settings.commandPrompts?.[commandId] ||
           command.instruction;
+
+        commandDefinition = command;
       }
 
       log(
@@ -550,6 +647,22 @@ async function handleImproveRequest(
         }
       );
 
+      if (isReadOnlyCommand) {
+        await sendMessageToFrame(
+          tab.id,
+          frameId,
+          {
+            type: "COERENTE_SHOW_RESULT",
+            title: commandDefinition?.label || "Resultado",
+            content: result,
+            contentType: selection.type
+          }
+        );
+
+        log("Resultado apresentado no painel flutuante.");
+        return;
+      }
+
 
       // ------------------------------------------------------
       // SUBSTITUIR
@@ -598,6 +711,24 @@ async function handleImproveRequest(
             error.message
         }
       );
+
+      try {
+        await sendMessageToFrame(
+          tab.id,
+          frameId,
+          {
+            type: "COERENTE_SHOW_RESULT",
+            title: "Coerente PT-PT",
+            content: error.message,
+            contentType: "text"
+          }
+        );
+      } catch (displayError) {
+        logError(
+          "Não foi possível apresentar o erro na página.",
+          displayError
+        );
+      }
     }
   }
 

@@ -7,8 +7,10 @@ Extensão para Chrome que melhora texto selecionado, tornando-o mais claro, coer
 - Reescreve texto em português europeu (PT-PT).
 - Preserva o significado e a informação original.
 - Mantém a estrutura e os atributos de fragmentos HTML sempre que possível.
-- Funciona em `input`, `textarea`, elementos `contenteditable` e editores como o CKEditor.
-- Pode ser acionada pelo menu de contexto ou pelo atalho `Ctrl/Cmd + Shift + Y`.
+- Melhora texto em `input`, `textarea`, elementos `contenteditable` e editores como o CKEditor.
+- Explica, resume e destaca os pontos principais de qualquer texto selecionável numa página.
+- O menu de contexto **Coerente PT-PT** reúne a melhoria normal, os comandos e os submenus de tamanho e tom.
+- A melhoria normal pode ser acionada pelo menu de contexto ou pelo atalho `Ctrl/Cmd + Shift + Y`.
 - Ao manter `Ctrl` premido durante 500 ms com texto selecionado, apresenta um botão flutuante junto à seleção, com acesso rápido à melhoria normal e a comandos de escrita.
 - Inclui ações para explicar, resumir, destacar pontos, continuar, alterar o tamanho e alterar o tom.
 - Permite escolher entre OpenAI, Anthropic, Gemini, Grok (xAI) e DeepSeek.
@@ -44,12 +46,13 @@ As chaves são guardadas localmente pelo Chrome através de `chrome.storage.loca
 
 ## Utilização
 
-Selecione texto num campo ou editor compatível e use uma destas opções:
+Selecione texto e clique com o botão direito para abrir **Coerente PT-PT**. Os comandos funcionam da seguinte forma:
 
-- clique com o botão direito e escolha **Tornar mais coerente (PT-PT)**;
-- pressione `Ctrl + Shift + Y` no Windows/Linux ou `Cmd + Shift + Y` no macOS.
+- **Explicar**, **Resumir** e **Destacar pontos principais** funcionam com qualquer texto selecionável da página. O resultado abre num painel flutuante no canto superior direito, onde pode ser copiado ou fechado;
+- **Tornar mais coerente (PT-PT)**, **Aprimorar a escrita**, **Continuar a escrever**, os comandos de tamanho e os comandos de tom alteram a seleção e, por isso, requerem um campo de texto ou editor compatível;
+- `Ctrl + Shift + Y` no Windows/Linux ou `Cmd + Shift + Y` no macOS executa **Tornar mais coerente (PT-PT)** num editor.
 
-Após a resposta da API, a extensão substitui apenas a seleção pelo texto melhorado.
+Nos comandos de edição, a extensão substitui apenas a seleção pelo texto processado. O painel de resultados dos comandos de leitura também pode ser fechado com `Esc`.
 
 Com texto selecionado, mantenha `Ctrl` premido durante 500 ms para apresentar um pequeno botão junto à posição atual do rato. O botão permanece visível depois de libertar a tecla; pressione novamente `Ctrl` ou `Esc` para o fechar. Atalhos como `Ctrl+C`, `Ctrl+V` e `Ctrl+Z` cancelam automaticamente a abertura:
 

@@ -44,15 +44,16 @@ Os antigos `popup.html` e `popup.js` foram removidos. O clique no ícone chama `
 
 ## Fluxo funcional
 
-1. O utilizador seleciona conteúdo num editor.
-2. Aciona **Tornar mais coerente (PT-PT)** no menu de contexto ou usa `Ctrl/Cmd + Shift + Y`.
+1. O utilizador seleciona conteúdo num editor ou texto comum numa página.
+2. O menu de contexto **Coerente PT-PT** apresenta a melhoria normal, Explicar, Resumir, Destacar pontos principais, Aprimorar a escrita, Continuar a escrever e os submenus de tamanho e tom. A melhoria normal também pode ser acionada com `Ctrl/Cmd + Shift + Y`.
    Em alternativa, mantém `Ctrl` premido durante 500 ms com texto selecionado para apresentar o botão flutuante junto à posição atual do rato: o ícone executa a melhoria normal e a seta abre os comandos adicionais. O botão permanece visível depois de libertar a tecla e fecha com outro toque em `Ctrl` ou com `Esc`. Qualquer atalho iniciado durante os 500 ms cancela a abertura.
 3. `background.js` pede a seleção ao `content.js` no frame correto.
-4. `content.js` devolve o texto ou o fragmento HTML selecionado.
+4. `content.js` devolve o texto ou o fragmento HTML selecionado e indica se a seleção é apenas de leitura.
 5. `background.js` lê o fornecedor ativo, a respetiva chave, o modelo e a instrução.
 6. O pedido é adaptado ao formato da API selecionada.
 7. A resposta é normalizada para texto.
-8. `content.js` substitui apenas a seleção original e aplica a sanitização necessária ao HTML.
+8. Para Explicar, Resumir e Destacar pontos principais, `content.js` apresenta a resposta num painel flutuante no canto superior direito, com ações para copiar e fechar. Estes três comandos funcionam sobre qualquer texto selecionável da página.
+9. Os restantes comandos exigem uma seleção editável; `content.js` substitui apenas a seleção original e aplica a sanitização necessária ao HTML.
 
 Se o content script não responder, o service worker tenta injetá-lo manualmente no frame e repete a mensagem.
 
@@ -147,13 +148,15 @@ Todas as respostas são convertidas num único texto final antes de serem devolv
 6. Selecionar texto, manter `Ctrl` premido durante 500 ms e confirmar que o assistente flutuante aparece e permanece visível. Confirmar que outro toque em `Ctrl` ou `Esc` o fecha e que `Ctrl+C` não o abre.
 7. Confirmar que o ícone executa a melhoria normal e que a seta abre todos os comandos e submenus.
 8. Confirmar que trocar de fornecedor não perde os valores introduzidos nos outros fornecedores.
-9. Testar pelo menos texto simples e HTML num editor compatível.
-10. Sempre que possível, testar cada fornecedor com uma chave válida sem expor a chave em logs ou capturas.
-11. Confirmar `git status`, criar o commit e fazer push para `origin/main`.
+9. Confirmar que o menu de contexto **Coerente PT-PT** apresenta todos os comandos e os submenus de tamanho e tom.
+10. Selecionar texto comum numa página e confirmar que Explicar, Resumir e Destacar pontos principais abrem o painel de resultados no canto superior direito. Testar Copiar, Fechar e `Esc`.
+11. Confirmar que os comandos de alteração continuam limitados a seleções editáveis e testar pelo menos texto simples e HTML num editor compatível.
+12. Sempre que possível, testar cada fornecedor com uma chave válida sem expor a chave em logs ou capturas.
+13. Confirmar `git status`, criar o commit e fazer push para `origin/main`.
 
 ## Estado conhecido
 
-- A versão do manifesto após tratar contextos invalidados durante o reload é `2.4.5`.
+- A versão do manifesto com comandos de leitura para qualquer seleção, painel de resultados e submenu completo no menu de contexto é `2.5.0`.
 - A sintaxe dos ficheiros JavaScript e o manifesto foram validados localmente.
 - Os pedidos reais a cada fornecedor dependem de chaves válidas e devem ser testados pelo utilizador ou num ambiente seguro.
 - Se um modelo deixar de existir, alterar primeiro o modelo na página de opções; atualizar o valor predefinido no código apenas quando necessário.

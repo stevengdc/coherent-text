@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Coerente PT-PT",
-  "version": "2.4.5",
-  "description": "Melhora texto selecionado em editores HTML, incluindo Salesforce.",
+  "version": "2.5.0",
+  "description": "Melhora, explica e resume texto selecionado em português europeu.",
 
   "permissions": [
     "contextMenus",

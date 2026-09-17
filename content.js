@@ -17,6 +17,7 @@
 
   let floatingHost = null;
   let floatingMenu = null;
+  let resultHost = null;
   let lastPointerPosition = null;
   let ctrlHoldTimer = null;
   let ctrlIsDown = false;
@@ -310,6 +311,101 @@
     }
   }
 
+  function hideResultPanel() {
+    resultHost?.remove();
+    resultHost = null;
+  }
+
+  async function copyResultText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.documentElement.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand("copy");
+      textarea.remove();
+      return copied;
+    }
+  }
+
+  function showResultPanel({ title, content, contentType }) {
+    hideResultPanel();
+
+    resultHost = document.createElement("div");
+    resultHost.id = "coerente-ptpt-result-host";
+    Object.assign(resultHost.style, {
+      all: "initial",
+      position: "fixed",
+      top: "20px",
+      right: "20px",
+      zIndex: "2147483647"
+    });
+
+    const shadow = resultHost.attachShadow({ mode: "closed" });
+    const style = document.createElement("style");
+    style.textContent = `
+      * { box-sizing: border-box; }
+      .panel { width: min(430px, calc(100vw - 40px)); max-height: min(620px, calc(100vh - 40px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #d7dce5; border-radius: 14px; background: #fff; color: #172033; box-shadow: 0 18px 50px rgba(15, 23, 42, .25); font: 14px/1.55 system-ui, sans-serif; }
+      .header { display: flex; align-items: center; gap: 10px; padding: 13px 14px; border-bottom: 1px solid #e6e9ef; }
+      .title { flex: 1; font-weight: 800; font-size: 15px; }
+      button { border: 0; border-radius: 7px; background: transparent; color: #48536a; padding: 7px 9px; font: 600 12px/1 system-ui, sans-serif; cursor: pointer; }
+      button:hover, button:focus-visible { background: #eef2f8; outline: none; }
+      .close { font-size: 19px; padding: 4px 8px; }
+      .content { overflow: auto; padding: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .content.html { white-space: normal; }
+      .content :first-child { margin-top: 0; }
+      .content :last-child { margin-bottom: 0; }
+    `;
+
+    const panel = document.createElement("section");
+    panel.className = "panel";
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", title || "Resultado");
+
+    const header = document.createElement("div");
+    header.className = "header";
+
+    const heading = document.createElement("div");
+    heading.className = "title";
+    heading.textContent = title || "Resultado";
+
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.textContent = "Copiar";
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "close";
+    close.textContent = "×";
+    close.setAttribute("aria-label", "Fechar");
+
+    const result = document.createElement("div");
+    result.className = `content${contentType === "html" ? " html" : ""}`;
+
+    if (contentType === "html") {
+      result.innerHTML = sanitizeHtml(content);
+    } else {
+      result.textContent = content;
+    }
+
+    copy.addEventListener("click", async () => {
+      const copied = await copyResultText(result.innerText);
+      copy.textContent = copied ? "Copiado" : "Não foi possível copiar";
+      setTimeout(() => { copy.textContent = "Copiar"; }, 1800);
+    });
+    close.addEventListener("click", hideResultPanel);
+
+    header.append(heading, copy, close);
+    panel.append(header, result);
+    shadow.append(style, panel);
+    document.documentElement.appendChild(resultHost);
+  }
+
 
   // ==========================================================
   // LOG
@@ -419,10 +515,6 @@
         range.commonAncestorContainer
       );
 
-    if (!editable) {
-      return null;
-    }
-
     return {
       selection,
       range,
@@ -500,7 +592,7 @@
 
 
     // --------------------------------------------------------
-    // RICH TEXT / CKEDITOR
+    // RICH TEXT, CKEDITOR OU TEXTO DA PÁGINA
     // --------------------------------------------------------
 
     const current =
@@ -535,16 +627,16 @@
           current.html,
 
         editorTag:
-          current.editable.tagName,
+          current.editable?.tagName || null,
 
         editorClass:
-          current.editable.className,
+          current.editable?.className || null,
 
         editorRole:
-          current.editable.getAttribute("role"),
+          current.editable?.getAttribute("role") || null,
 
         contentEditable:
-          current.editable.getAttribute("contenteditable")
+          current.editable?.getAttribute("contenteditable") || null
       }
     );
 
@@ -650,6 +742,7 @@
     if (event.key === "Escape") {
       cancelCtrlHold();
       hideFloatingAssistant();
+      hideResultPanel();
       return;
     }
 
@@ -735,7 +828,10 @@
         text,
 
         html:
-          null
+          null,
+
+        readOnly:
+          false
       };
     }
 
@@ -746,18 +842,17 @@
 
     if (
       savedRange &&
-      savedEditable &&
-      document.contains(
-        savedEditable
+      (
+        !savedEditable ||
+        document.contains(savedEditable)
       )
     ) {
       const text =
         savedRange.toString();
 
-      const html =
-        rangeToHtml(
-          savedRange
-        );
+      const html = savedEditable
+        ? rangeToHtml(savedRange)
+        : null;
 
       log(
         "A devolver seleção HTML guardada.",
@@ -772,11 +867,16 @@
           true,
 
         type:
-          "html",
+          savedEditable
+            ? "html"
+            : "text",
 
         text,
 
-        html
+        html,
+
+        readOnly:
+          !savedEditable
       };
     }
 
@@ -808,10 +908,10 @@
             current.html,
 
           editorTag:
-            current.editable.tagName,
+            current.editable?.tagName || null,
 
           editorClass:
-            current.editable.className
+            current.editable?.className || null
         }
       );
 
@@ -820,13 +920,20 @@
           true,
 
         type:
-          "html",
+          current.editable
+            ? "html"
+            : "text",
 
         text:
           current.text,
 
         html:
-          current.html
+          current.editable
+            ? current.html
+            : null,
+
+        readOnly:
+          !current.editable
       };
     }
 
@@ -1263,6 +1370,24 @@
         sendResponse(
           result
         );
+
+        return;
+      }
+
+
+      if (
+        message.type ===
+        "COERENTE_SHOW_RESULT"
+      ) {
+        showResultPanel({
+          title: message.title,
+          content: message.content,
+          contentType: message.contentType
+        });
+
+        sendResponse({
+          success: true
+        });
 
         return;
       }
