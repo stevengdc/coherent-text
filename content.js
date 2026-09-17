@@ -18,6 +18,11 @@
   let floatingHost = null;
   let floatingMenu = null;
   let lastPointerPosition = null;
+  let ctrlHoldTimer = null;
+  let ctrlIsDown = false;
+  let ctrlHoldElapsed = false;
+
+  const CTRL_HOLD_DELAY = 500;
 
   const INLINE_MENU = [
     { command: "explain", label: "Explicar" },
@@ -190,6 +195,31 @@
     if (!floatingHost) return;
     floatingHost.style.display = "none";
     floatingMenu?.classList.remove("open");
+  }
+
+  function isFloatingAssistantVisible() {
+    return floatingHost?.style.display === "block";
+  }
+
+  function cancelCtrlHold() {
+    if (ctrlHoldTimer !== null) {
+      clearTimeout(ctrlHoldTimer);
+      ctrlHoldTimer = null;
+    }
+
+    ctrlHoldElapsed = false;
+  }
+
+  function startCtrlHold() {
+    cancelCtrlHold();
+    ctrlHoldTimer = setTimeout(() => {
+      ctrlHoldTimer = null;
+      ctrlHoldElapsed = true;
+
+      if (ctrlIsDown && saveSelection()) {
+        showFloatingAssistant(null);
+      }
+    }, CTRL_HOLD_DELAY);
   }
 
   function getSelectionAnchorRect() {
@@ -518,10 +548,16 @@
 
       setTimeout(
         () => {
-          if (saveSelection() && event.ctrlKey) {
+          const hasSelection = saveSelection();
+
+          if (
+            hasSelection &&
+            (
+              isFloatingAssistantVisible() ||
+              (ctrlIsDown && ctrlHoldElapsed)
+            )
+          ) {
             showFloatingAssistant(lastPointerPosition);
-          } else if (!event.ctrlKey || !floatingHost?.contains(event.target)) {
-            hideFloatingAssistant();
           }
         },
         0
@@ -536,17 +572,12 @@
     event => {
       setTimeout(
         () => {
-          if (event.key === "Control" || !event.ctrlKey) {
-            hideFloatingAssistant();
-            return;
-          }
-
-          if (saveSelection() && event.ctrlKey) {
-            showFloatingAssistant(
-              event.shiftKey
-                ? null
-                : lastPointerPosition
-            );
+          if (
+            event.key !== "Control" &&
+            isFloatingAssistantVisible() &&
+            saveSelection()
+          ) {
+            showFloatingAssistant(null);
           }
         },
         0
@@ -555,17 +586,44 @@
     true
   );
 
-  window.addEventListener("scroll", hideFloatingAssistant, true);
-  window.addEventListener("resize", hideFloatingAssistant);
+  window.addEventListener("scroll", () => {
+    if (isFloatingAssistantVisible()) showFloatingAssistant(null);
+  }, true);
+  window.addEventListener("resize", () => {
+    if (isFloatingAssistantVisible()) showFloatingAssistant(null);
+  });
   window.addEventListener("keydown", event => {
     if (event.key === "Escape") {
+      cancelCtrlHold();
       hideFloatingAssistant();
       return;
     }
 
-    if (event.key === "Control" && !event.repeat && saveSelection()) {
-      showFloatingAssistant(null);
+    if (event.key === "Control" && !event.repeat) {
+      ctrlIsDown = true;
+
+      if (isFloatingAssistantVisible()) {
+        cancelCtrlHold();
+        hideFloatingAssistant();
+      } else {
+        startCtrlHold();
+      }
+
+      return;
     }
+
+    const isModifier = ["Shift", "Alt", "Meta"].includes(event.key);
+
+    if (ctrlIsDown && !isModifier) {
+      cancelCtrlHold();
+      hideFloatingAssistant();
+    }
+  }, true);
+
+  window.addEventListener("keyup", event => {
+    if (event.key !== "Control") return;
+    ctrlIsDown = false;
+    cancelCtrlHold();
   }, true);
 
 

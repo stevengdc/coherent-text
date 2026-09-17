@@ -9,7 +9,7 @@ Extensão para Chrome que melhora texto selecionado, tornando-o mais claro, coer
 - Mantém a estrutura e os atributos de fragmentos HTML sempre que possível.
 - Funciona em `input`, `textarea`, elementos `contenteditable` e editores como o CKEditor.
 - Pode ser acionada pelo menu de contexto ou pelo atalho `Ctrl/Cmd + Shift + Y`.
-- Ao manter `Ctrl` premido com texto selecionado, apresenta um botão flutuante junto à seleção, com acesso rápido à melhoria normal e a comandos de escrita.
+- Ao manter `Ctrl` premido durante 500 ms com texto selecionado, apresenta um botão flutuante junto à seleção, com acesso rápido à melhoria normal e a comandos de escrita.
 - Inclui ações para explicar, resumir, destacar pontos, continuar, alterar o tamanho e alterar o tom.
 - Permite escolher entre OpenAI, Anthropic, Gemini, Grok (xAI) e DeepSeek.
 - Permite configurar separadamente a chave e o modelo de cada fornecedor.
@@ -51,7 +51,7 @@ Selecione texto num campo ou editor compatível e use uma destas opções:
 
 Após a resposta da API, a extensão substitui apenas a seleção pelo texto melhorado.
 
-Com texto selecionado, mantenha `Ctrl` premido para apresentar um pequeno botão junto ao cursor. Ao largar `Ctrl`, o botão desaparece:
+Com texto selecionado, mantenha `Ctrl` premido durante 500 ms para apresentar um pequeno botão junto ao cursor. O botão permanece visível depois de libertar a tecla; pressione novamente `Ctrl` ou `Esc` para o fechar. Atalhos como `Ctrl+C`, `Ctrl+V` e `Ctrl+Z` cancelam automaticamente a abertura:
 
 - clique no ícone para executar **Tornar mais coerente (PT-PT)**;
 - clique na seta para abrir os comandos adicionais e respetivos submenus.
