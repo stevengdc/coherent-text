@@ -32,10 +32,11 @@ A extensão envia a seleção para um fornecedor de IA configurado pelo utilizad
 | --- | --- |
 | `manifest.json` | Manifesto, permissões, service worker, content script, página de opções e ícones. |
 | `background.js` | Menu de contexto, abertura das opções, configuração, escolha do fornecedor, pedidos às APIs e comunicação com o content script. |
-| `content.js` | Deteta e lê a seleção, distingue texto simples de HTML, sanitiza e substitui o conteúdo no editor. |
+| `content.js` | Deteta e lê a seleção, apresenta o assistente flutuante, distingue texto simples de HTML, sanitiza e substitui o conteúdo no editor. |
 | `options.html` | Página completa de configuração aberta ao clicar no ícone da extensão. |
 | `options.js` | Carrega, migra, apresenta e guarda fornecedor, chaves, modelos e instrução. |
 | `prompt.txt` | Fonte única da instrução de escrita inicial. |
+| `commands.json` | Fonte única das instruções predefinidas dos comandos adicionais. |
 | `README.md` | Documentação pública de instalação, configuração e utilização. |
 | `icons/` | Ícones usados pelo Chrome. |
 
@@ -45,6 +46,7 @@ Os antigos `popup.html` e `popup.js` foram removidos. O clique no ícone chama `
 
 1. O utilizador seleciona conteúdo num editor.
 2. Aciona **Tornar mais coerente (PT-PT)** no menu de contexto ou usa `Ctrl/Cmd + Shift + Y`.
+   Em alternativa, utiliza o botão flutuante apresentado junto à seleção: o ícone executa a melhoria normal e a seta abre os comandos adicionais.
 3. `background.js` pede a seleção ao `content.js` no frame correto.
 4. `content.js` devolve o texto ou o fragmento HTML selecionado.
 5. `background.js` lê o fornecedor ativo, a respetiva chave, o modelo e a instrução.
@@ -87,6 +89,20 @@ models: {
   deepseek: string
 }
 systemPrompt: string
+commandPrompts: {
+  explain: string,
+  summarize: string,
+  key_points: string,
+  improve_writing: string,
+  continue_writing: string,
+  shorten: string,
+  lengthen: string,
+  tone_informal: string,
+  tone_direct: string,
+  tone_friendly: string,
+  tone_confident: string,
+  tone_professional: string
+}
 ```
 
 Existe compatibilidade com a configuração antiga: `apiKey` e `model` são tratados como valores OpenAI quando ainda não existe a nova estrutura.
@@ -99,6 +115,8 @@ As chaves ficam apenas no armazenamento local do perfil Chrome. Como se trata de
 - A página de opções carrega esse ficheiro como valor predefinido.
 - O utilizador pode personalizar a instrução; o valor personalizado fica em `systemPrompt`.
 - Para texto simples, `background.js` utiliza uma instrução curta própria, sem regras de HTML.
+- `commands.json` contém as instruções predefinidas de Explicar, Resumir, Destacar pontos principais, Aprimorar a escrita, Continuar a escrever, Encurtar, Alongar e dos cinco tons.
+- A página de opções permite personalizar cada comando; os valores ficam em `commandPrompts`.
 - A resposta não deve conter cercas Markdown como ````html`.
 
 ## Formatos das APIs
@@ -126,14 +144,16 @@ Todas as respostas são convertidas num único texto final antes de serem devolv
 3. Executar `git diff --check`.
 4. Recarregar a extensão em `chrome://extensions` e confirmar que não existem erros do service worker.
 5. Clicar no ícone e confirmar que a página de opções abre num separador.
-6. Confirmar que trocar de fornecedor não perde os valores introduzidos nos outros fornecedores.
-7. Testar pelo menos texto simples e HTML num editor compatível.
-8. Sempre que possível, testar cada fornecedor com uma chave válida sem expor a chave em logs ou capturas.
-9. Confirmar `git status`, criar o commit e fazer push para `origin/main`.
+6. Selecionar texto e confirmar que o assistente flutuante aparece junto à seleção.
+7. Confirmar que o ícone executa a melhoria normal e que a seta abre todos os comandos e submenus.
+8. Confirmar que trocar de fornecedor não perde os valores introduzidos nos outros fornecedores.
+9. Testar pelo menos texto simples e HTML num editor compatível.
+10. Sempre que possível, testar cada fornecedor com uma chave válida sem expor a chave em logs ou capturas.
+11. Confirmar `git status`, criar o commit e fazer push para `origin/main`.
 
 ## Estado conhecido
 
-- A versão do manifesto após a introdução de vários fornecedores é `2.3.0`.
+- A versão do manifesto após a introdução do assistente flutuante é `2.4.0`.
 - A sintaxe dos ficheiros JavaScript e o manifesto foram validados localmente.
 - Os pedidos reais a cada fornecedor dependem de chaves válidas e devem ser testados pelo utilizador ou num ambiente seguro.
 - Se um modelo deixar de existir, alterar primeiro o modelo na página de opções; atualizar o valor predefinido no código apenas quando necessário.

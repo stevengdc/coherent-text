@@ -1,0 +1,50 @@
+{
+  "explain": {
+    "label": "Explicar",
+    "instruction": "Explica o conteúdo selecionado de forma clara e acessível, preservando os factos, nomes, números e referências originais. Devolve apenas a explicação final."
+  },
+  "summarize": {
+    "label": "Resumir",
+    "instruction": "Resume o conteúdo selecionado, conservando a informação essencial e eliminando repetições ou pormenores secundários. Devolve apenas o resumo final."
+  },
+  "key_points": {
+    "label": "Destacar pontos principais",
+    "instruction": "Transforma o conteúdo selecionado numa lista concisa dos pontos principais. Mantém a ordem lógica e toda a informação essencial. Devolve apenas o conteúdo final."
+  },
+  "improve_writing": {
+    "label": "Aprimorar a escrita",
+    "instruction": "Aprimora a redação, tornando-a mais clara, fluida, coerente e correta em português europeu, sem alterar a informação original. Devolve apenas o conteúdo final."
+  },
+  "continue_writing": {
+    "label": "Continuar a escrever",
+    "instruction": "Mantém integralmente o conteúdo selecionado e continua a redação de forma natural e coerente, respeitando o mesmo assunto, contexto, estrutura e tom. Devolve o conteúdo original seguido da continuação, sem comentários adicionais."
+  },
+  "shorten": {
+    "label": "Encurtar",
+    "instruction": "Encurta o conteúdo selecionado, removendo redundâncias e palavras dispensáveis, sem perder a informação essencial. Devolve apenas o conteúdo final."
+  },
+  "lengthen": {
+    "label": "Alongar",
+    "instruction": "Desenvolve e alonga o conteúdo selecionado com transições e esclarecimentos úteis, sem inventar factos nem alterar a informação original. Devolve apenas o conteúdo final."
+  },
+  "tone_informal": {
+    "label": "Informal",
+    "instruction": "Reescreve o conteúdo selecionado num tom informal, natural e descontraído em português europeu, preservando a informação original. Devolve apenas o conteúdo final."
+  },
+  "tone_direct": {
+    "label": "Direto",
+    "instruction": "Reescreve o conteúdo selecionado num tom direto, conciso e objetivo, preservando a informação original. Devolve apenas o conteúdo final."
+  },
+  "tone_friendly": {
+    "label": "Amigável",
+    "instruction": "Reescreve o conteúdo selecionado num tom amigável, próximo e cordial em português europeu, preservando a informação original. Devolve apenas o conteúdo final."
+  },
+  "tone_confident": {
+    "label": "Confiante",
+    "instruction": "Reescreve o conteúdo selecionado num tom confiante, seguro e convincente, sem exageros e preservando a informação original. Devolve apenas o conteúdo final."
+  },
+  "tone_professional": {
+    "label": "Profissional",
+    "instruction": "Reescreve o conteúdo selecionado num tom profissional, claro e cuidado em português europeu, preservando a informação original. Devolve apenas o conteúdo final."
+  }
+}

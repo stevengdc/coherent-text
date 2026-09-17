@@ -9,6 +9,8 @@ Extensão para Chrome que melhora texto selecionado, tornando-o mais claro, coer
 - Mantém a estrutura e os atributos de fragmentos HTML sempre que possível.
 - Funciona em `input`, `textarea`, elementos `contenteditable` e editores como o CKEditor.
 - Pode ser acionada pelo menu de contexto ou pelo atalho `Ctrl/Cmd + Shift + Y`.
+- Apresenta um botão flutuante junto ao texto selecionado, com acesso rápido à melhoria normal e a comandos de escrita.
+- Inclui ações para explicar, resumir, destacar pontos, continuar, alterar o tamanho e alterar o tom.
 - Permite escolher entre OpenAI, Anthropic, Gemini, Grok (xAI) e DeepSeek.
 - Permite configurar separadamente a chave e o modelo de cada fornecedor.
 - Abre todas as opções num separador próprio ao clicar no ícone da extensão.
@@ -35,7 +37,8 @@ Extensão para Chrome que melhora texto selecionado, tornando-o mais claro, coer
 3. Introduza a chave da API desse fornecedor.
 4. Confirme ou altere o modelo.
 5. Personalize as instruções, se necessário.
-6. Clique em **Guardar configuração**.
+6. Personalize as instruções dos comandos, se necessário.
+7. Clique em **Guardar configuração**.
 
 As chaves são guardadas localmente pelo Chrome através de `chrome.storage.local`. Não são incluídas no código nem enviadas para este repositório. O texto selecionado e a chave correspondente são enviados diretamente para a API do fornecedor ativo quando é pedida uma reescrita.
 
@@ -47,6 +50,11 @@ Selecione texto num campo ou editor compatível e use uma destas opções:
 - pressione `Ctrl + Shift + Y` no Windows/Linux ou `Cmd + Shift + Y` no macOS.
 
 Após a resposta da API, a extensão substitui apenas a seleção pelo texto melhorado.
+
+Ao selecionar texto, aparece também um pequeno botão junto ao cursor:
+
+- clique no ícone para executar **Tornar mais coerente (PT-PT)**;
+- clique na seta para abrir os comandos adicionais e respetivos submenus.
 
 ## Permissões
 
@@ -70,6 +78,7 @@ Estrutura principal:
 - `content.js` — leitura e substituição da seleção;
 - `options.html` e `options.js` — página de configuração dos fornecedores;
 - `prompt.txt` — instrução inicial usada pela extensão;
+- `commands.json` — instruções predefinidas dos comandos do menu flutuante;
 - `CONTEXT.md` — contexto técnico para continuidade do desenvolvimento;
 - `icons/` — ícones usados pelo navegador.
 

@@ -11,6 +11,7 @@ const DEFAULT_MODELS = {
 };
 
 let defaultPromptPromise;
+let defaultCommandsPromise;
 
 function loadDefaultPrompt() {
   if (!defaultPromptPromise) {
@@ -26,6 +27,22 @@ function loadDefaultPrompt() {
   }
 
   return defaultPromptPromise;
+}
+
+function loadDefaultCommands() {
+  if (!defaultCommandsPromise) {
+    defaultCommandsPromise = fetch(
+      chrome.runtime.getURL("commands.json")
+    ).then(response => {
+      if (!response.ok) {
+        throw new Error("Não foi possível carregar commands.json.");
+      }
+
+      return response.json();
+    });
+  }
+
+  return defaultCommandsPromise;
 }
 
 
@@ -276,6 +293,8 @@ async function handleImproveRequest(
   tab
 ) {
 
+    const commandId = info.command || null;
+
     log(
       "Menu clicado.",
       {
@@ -435,7 +454,8 @@ async function handleImproveRequest(
           "provider",
           "apiKeys",
           "models",
-          "systemPrompt"
+          "systemPrompt",
+          "commandPrompts"
         ]);
 
       const provider = settings.provider || "openai";
@@ -458,11 +478,27 @@ async function handleImproveRequest(
         settings.systemPrompt ||
         await loadDefaultPrompt();
 
+      let commandInstruction = null;
+
+      if (commandId) {
+        const defaultCommands = await loadDefaultCommands();
+        const command = defaultCommands[commandId];
+
+        if (!command) {
+          throw new Error("O comando selecionado não é válido.");
+        }
+
+        commandInstruction =
+          settings.commandPrompts?.[commandId] ||
+          command.instruction;
+      }
+
       log(
         "Configuração carregada.",
         {
           model,
           provider,
+          commandId,
           hasKey:
             true
         }
@@ -485,7 +521,8 @@ async function handleImproveRequest(
             apiKey,
             model,
             prompt,
-            provider
+            provider,
+            commandInstruction
           );
 
       } else {
@@ -494,12 +531,13 @@ async function handleImproveRequest(
             selection.text,
             apiKey,
             model,
-            provider
+            provider,
+            commandInstruction
           );
       }
 
       log(
-        "Resposta da OpenAI recebida.",
+        "Resposta do fornecedor recebida.",
         {
           length:
             result.length,
@@ -575,10 +613,15 @@ chrome.runtime.onMessage.addListener(
     message,
     sender
   ) => {
-    if (
-      message.type !==
-      "COERENTE_KEYBOARD_SHORTCUT"
-    ) {
+    const isShortcut =
+      message.type ===
+      "COERENTE_KEYBOARD_SHORTCUT";
+
+    const isInlineCommand =
+      message.type ===
+      "COERENTE_INLINE_COMMAND";
+
+    if (!isShortcut && !isInlineCommand) {
       return;
     }
 
@@ -597,7 +640,11 @@ chrome.runtime.onMessage.addListener(
         menuItemId:
           MENU_ID,
         frameId:
-          sender.frameId ?? 0
+          sender.frameId ?? 0,
+        command:
+          isInlineCommand
+            ? message.command
+            : null
       },
       sender.tab
     );
@@ -614,7 +661,8 @@ async function improveHtml(
   apiKey,
   model,
   systemPrompt,
-  provider
+  provider,
+  commandInstruction
 ) {
   log(
     "A enviar HTML para a OpenAI.",
@@ -625,11 +673,15 @@ async function improveHtml(
     }
   );
 
+  const instructions = commandInstruction
+    ? `${systemPrompt}\n\nTAREFA ESPECÍFICA:\nA tarefa seguinte substitui apenas o objetivo e o tom gerais indicados acima. Mantém todas as regras de preservação de HTML, dados e segurança.\n${commandInstruction}`
+    : systemPrompt;
+
   return await requestProvider({
     provider,
     apiKey,
     model,
-    instructions: systemPrompt,
+    instructions,
     input: "Fragmento HTML a melhorar:\n\n" + html
   });
 }
@@ -643,7 +695,8 @@ async function improvePlainText(
   text,
   apiKey,
   model,
-  provider
+  provider,
+  commandInstruction
 ) {
   const plainPrompt = `
 Reescreve o texto em português europeu (PT-PT).
@@ -666,11 +719,15 @@ Devolve apenas o texto final.
     }
   );
 
+  const instructions = commandInstruction
+    ? `${plainPrompt.trim()}\n\nTAREFA ESPECÍFICA:\nA tarefa seguinte substitui o objetivo e o tom gerais indicados acima.\n${commandInstruction}`
+    : plainPrompt.trim();
+
   return await requestProvider({
     provider,
     apiKey,
     model,
-    instructions: plainPrompt.trim(),
+    instructions,
     input: text
   });
 }

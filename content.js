@@ -15,6 +15,231 @@
   let savedInputStart = null;
   let savedInputEnd = null;
 
+  let floatingHost = null;
+  let floatingMenu = null;
+  let lastPointerPosition = null;
+
+  const INLINE_MENU = [
+    { command: "explain", label: "Explicar" },
+    { command: "summarize", label: "Resumir" },
+    { command: "key_points", label: "Destacar pontos principais" },
+    { separator: true },
+    { command: "improve_writing", label: "Aprimorar a escrita" },
+    { command: "continue_writing", label: "Continuar a escrever" },
+    { separator: true },
+    {
+      label: "Alterar o tamanho",
+      children: [
+        { command: "shorten", label: "Encurtar" },
+        { command: "lengthen", label: "Alongar" }
+      ]
+    },
+    {
+      label: "Alterar o tom",
+      children: [
+        { command: "tone_informal", label: "Informal" },
+        { command: "tone_direct", label: "Direto" },
+        { command: "tone_friendly", label: "Amigável" },
+        { command: "tone_confident", label: "Confiante" },
+        { command: "tone_professional", label: "Profissional" }
+      ]
+    }
+  ];
+
+
+  // ==========================================================
+  // ASSISTENTE FLUTUANTE
+  // ==========================================================
+
+  function createMenuItems(items, documentRoot) {
+    const fragment = documentRoot.createDocumentFragment();
+
+    for (const item of items) {
+      if (item.separator) {
+        const separator = documentRoot.createElement("div");
+        separator.className = "separator";
+        fragment.appendChild(separator);
+        continue;
+      }
+
+      if (item.children) {
+        const submenu = documentRoot.createElement("div");
+        submenu.className = "submenu";
+
+        const trigger = documentRoot.createElement("button");
+        trigger.type = "button";
+        trigger.className = "menu-item submenu-trigger";
+        trigger.innerHTML = `<span>${item.label}</span><span aria-hidden="true">›</span>`;
+
+        const panel = documentRoot.createElement("div");
+        panel.className = "submenu-panel";
+        panel.appendChild(createMenuItems(item.children, documentRoot));
+
+        trigger.addEventListener("click", event => {
+          event.stopPropagation();
+          submenu.classList.toggle("open");
+        });
+
+        submenu.append(trigger, panel);
+        fragment.appendChild(submenu);
+        continue;
+      }
+
+      const button = documentRoot.createElement("button");
+      button.type = "button";
+      button.className = "menu-item";
+      button.dataset.command = item.command;
+      button.textContent = item.label;
+      fragment.appendChild(button);
+    }
+
+    return fragment;
+  }
+
+  function ensureFloatingAssistant() {
+    if (floatingHost?.isConnected) {
+      return floatingHost;
+    }
+
+    floatingHost = document.createElement("div");
+    floatingHost.id = "coerente-ptpt-floating-host";
+    Object.assign(floatingHost.style, {
+      all: "initial",
+      position: "fixed",
+      zIndex: "2147483647",
+      display: "none"
+    });
+
+    const shadow = floatingHost.attachShadow({ mode: "closed" });
+    const style = document.createElement("style");
+    style.textContent = `
+      * { box-sizing: border-box; }
+      .assistant { position: relative; display: flex; align-items: stretch; border: 1px solid #d4d9e2; border-radius: 10px; background: #fff; box-shadow: 0 8px 26px rgba(15, 23, 42, .22); font: 13px/1.3 system-ui, sans-serif; color: #172033; }
+      button { font: inherit; }
+      .primary, .toggle { display: grid; place-items: center; height: 36px; border: 0; background: transparent; cursor: pointer; }
+      .primary { width: 40px; border-radius: 9px 0 0 9px; }
+      .primary img { width: 22px; height: 22px; display: block; }
+      .toggle { width: 28px; border-left: 1px solid #e1e5eb; border-radius: 0 9px 9px 0; font-size: 13px; color: #465168; }
+      .primary:hover, .toggle:hover, .primary:focus-visible, .toggle:focus-visible { background: #f0f3f8; outline: none; }
+      .menu { position: absolute; top: calc(100% + 7px); left: 0; width: 250px; padding: 7px; border: 1px solid #d7dce5; border-radius: 11px; background: #fff; box-shadow: 0 14px 38px rgba(15, 23, 42, .2); display: none; }
+      .menu.open { display: block; }
+      .menu-title { padding: 7px 10px 6px; color: #7a8497; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+      .menu-item { width: 100%; min-height: 34px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 0; border-radius: 7px; background: transparent; color: #202a3d; text-align: left; cursor: pointer; white-space: nowrap; }
+      .menu-item:hover, .menu-item:focus-visible { background: #eef2f8; outline: none; }
+      .separator { height: 1px; margin: 6px 5px; background: #e7eaf0; }
+      .submenu { position: relative; }
+      .submenu-panel { position: absolute; top: -7px; left: calc(100% + 5px); min-width: 160px; padding: 7px; border: 1px solid #d7dce5; border-radius: 11px; background: #fff; box-shadow: 0 14px 38px rgba(15, 23, 42, .2); display: none; }
+      .submenu:hover > .submenu-panel, .submenu:focus-within > .submenu-panel, .submenu.open > .submenu-panel { display: block; }
+    `;
+
+    const assistant = document.createElement("div");
+    assistant.className = "assistant";
+
+    const primary = document.createElement("button");
+    primary.type = "button";
+    primary.className = "primary";
+    primary.title = "Tornar mais coerente (PT-PT)";
+    primary.setAttribute("aria-label", "Tornar mais coerente (PT-PT)");
+
+    const icon = document.createElement("img");
+    icon.src = chrome.runtime.getURL("icons/icon-32.png");
+    icon.alt = "";
+    primary.appendChild(icon);
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "toggle";
+    toggle.textContent = "⌄";
+    toggle.title = "Abrir comandos";
+    toggle.setAttribute("aria-label", "Abrir comandos");
+    toggle.setAttribute("aria-expanded", "false");
+
+    floatingMenu = document.createElement("div");
+    floatingMenu.className = "menu";
+    floatingMenu.setAttribute("role", "menu");
+
+    const title = document.createElement("div");
+    title.className = "menu-title";
+    title.textContent = "Comandos";
+    floatingMenu.append(title, createMenuItems(INLINE_MENU, document));
+
+    floatingHost.addEventListener("mousedown", event => {
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
+
+    primary.addEventListener("click", () => runInlineCommand(null));
+    toggle.addEventListener("click", event => {
+      event.stopPropagation();
+      const open = floatingMenu.classList.toggle("open");
+      toggle.setAttribute("aria-expanded", String(open));
+    });
+
+    floatingMenu.addEventListener("click", event => {
+      const button = event.target.closest("button[data-command]");
+      if (button) runInlineCommand(button.dataset.command);
+    });
+
+    assistant.append(primary, toggle, floatingMenu);
+    shadow.append(style, assistant);
+    document.documentElement.appendChild(floatingHost);
+    return floatingHost;
+  }
+
+  function hideFloatingAssistant() {
+    if (!floatingHost) return;
+    floatingHost.style.display = "none";
+    floatingMenu?.classList.remove("open");
+  }
+
+  function getSelectionAnchorRect() {
+    if (savedInput?.isConnected) {
+      return savedInput.getBoundingClientRect();
+    }
+
+    if (savedRange) {
+      const rect = savedRange.getBoundingClientRect();
+      if (rect.width || rect.height) return rect;
+    }
+
+    return null;
+  }
+
+  function showFloatingAssistant(pointer = null) {
+    const rect = getSelectionAnchorRect();
+    if (!rect) return;
+
+    const host = ensureFloatingAssistant();
+    const point = pointer === undefined
+      ? lastPointerPosition
+      : pointer;
+    const preferredX = point?.x ?? rect.right;
+    const preferredY = point?.y ?? rect.bottom;
+    const width = 70;
+    const height = 44;
+
+    host.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, preferredX + 8))}px`;
+    host.style.top = `${Math.max(8, Math.min(window.innerHeight - height - 8, preferredY + 10))}px`;
+    host.style.display = "block";
+  }
+
+  function runInlineCommand(command) {
+    if (!savedRange && !savedInput) {
+      hideFloatingAssistant();
+      showShortcutNotice("Selecione o texto que pretende alterar.");
+      return;
+    }
+
+    hideFloatingAssistant();
+    chrome.runtime.sendMessage({
+      type: "COERENTE_INLINE_COMMAND",
+      command
+    }).catch(error => {
+      log("Não foi possível executar o comando.", error);
+      showShortcutNotice("Não foi possível executar o comando.");
+    });
+  }
+
 
   // ==========================================================
   // LOG
@@ -281,9 +506,20 @@
 
   document.addEventListener(
     "mouseup",
-    () => {
+    event => {
+      lastPointerPosition = {
+        x: event.clientX,
+        y: event.clientY
+      };
+
       setTimeout(
-        saveSelection,
+        () => {
+          if (saveSelection()) {
+            showFloatingAssistant(lastPointerPosition);
+          } else if (!floatingHost?.contains(event.target)) {
+            hideFloatingAssistant();
+          }
+        },
         0
       );
     },
@@ -293,14 +529,28 @@
 
   document.addEventListener(
     "keyup",
-    () => {
+    event => {
       setTimeout(
-        saveSelection,
+        () => {
+          if (saveSelection()) {
+            showFloatingAssistant(
+              event.shiftKey
+                ? null
+                : lastPointerPosition
+            );
+          }
+        },
         0
       );
     },
     true
   );
+
+  window.addEventListener("scroll", hideFloatingAssistant, true);
+  window.addEventListener("resize", hideFloatingAssistant);
+  window.addEventListener("keydown", event => {
+    if (event.key === "Escape") hideFloatingAssistant();
+  }, true);
 
 
   document.addEventListener(
